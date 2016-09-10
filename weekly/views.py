@@ -1,6 +1,7 @@
 # coding= utf-8
 from __future__ import unicode_literals
-from django.shortcuts import render, urlresolvers
+from django.shortcuts import render
+from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from datetime import date as _date, datetime
 from django.contrib import messages, sessions
@@ -45,7 +46,7 @@ def add(request, year, week):
         messages.success(request, "ok")
     except Exception as e:
         messages.error(request, "error: " + e.message)
-    return HttpResponseRedirect(urlresolvers.reverse('weekly:view', args=[year, week]))
+    return HttpResponseRedirect(reverse('weekly:view', args=[year, week]))
 
 
 def export(request, year, week):

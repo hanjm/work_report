@@ -1,6 +1,7 @@
 # coding= utf-8
 from __future__ import unicode_literals
-from django.shortcuts import render, urlresolvers
+from django.shortcuts import render
+from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from datetime import datetime
 from django.contrib import messages, sessions
@@ -42,7 +43,7 @@ def add(request, date):
         messages.success(request, "ok")
     except Exception as e:
         messages.error(request, "error: " + e.message)
-    return HttpResponseRedirect(urlresolvers.reverse('daily:view', args=[date]))
+    return HttpResponseRedirect(reverse('daily:view', args=[date]))
 
 
 def export(request, date):
