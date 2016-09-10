@@ -17,7 +17,8 @@ def index(request, date=datetime.now().strftime('%Y-%m-%d')):
         team = get_team_by_name(name)
     except:
         # team = ''
-        return login(request)
+        messages.info(request, '测试账号：F1670111 密码asdf.2016')
+        return HttpResponseRedirect('/login/?next=/')
     reports = get_team_week_daily_reports_by_date(team=team, date=date)
     dates = get_week_days_by_date(date, return_type="date")
     context = {
