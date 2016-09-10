@@ -1,7 +1,7 @@
 upstream django {
     # connect to this socket
     # server unix:///tmp/uwsgi.sock;    # for a file socket
-    server 127.0.0.1:9000;      # for a web port socket
+    server 127.0.0.1:9003;      # for a web port socket
     }
 server {
 	listen 8080;
@@ -15,6 +15,6 @@ server {
     
 	location / {
 		include /etc/nginx/uwsgi_params;
-		uwsgi_pass 127.0.0.1:8002;
+		uwsgi_pass django;
 	}
 }
