@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load weekly_custom_filter %}
+{% block title %}
+    <title>每周工作報告</title>
+{% endblock title %}
+{% block nav %}
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="{% url 'weekly:index' %}">工作報告</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li><a class="navbar-brand" href="{% url 'daily:index' %}">日報</a></li>
+            <li class="active"><a class="navbar-brand" href="{% url 'weekly:index' %}">週報</a></li>
+        </ul>
+        <div class="pull-right" id="div-bread">
+            {% if request.user.is_authenticated %}
+                <span>{{ name }} 已登录</span>
+                <a href="{% url 'admin:index' %}">管理</a><span>&nbsp;/</span>
+                <a href="{% url 'admin:password_change' %}">修改密碼</a><span>&nbsp;/</span>
+                <a href="{% url 'daily:logout' %}?next=/">註銷</a>
+            {% else %}
+                <a href="{% url 'daily:login' %}?next=/">登錄</a>
+            {% endif %}
+        </div>
+        <div class="navbar-text">
+            {{ user.name }}
+        </div>
+        <div class="navbar-form navbar-search">
+            <form id="search" action="{% url 'weekly:index' %}" method="get" role="form">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="week" name="week" placeholder="Search"
+                           onfocus="WdatePicker({isShowWeek:true, onpicked:function(){document.getElementById('btn-submit').click()}})"
+                           value="{{ year }}/{{ week }}" readonly/>
+                    <button type="button" class="btn btn-default" id="btn-submit"
+                            onclick="location.href={% url 'weekly:index' %} + document.getElementById('week').value">查看
+                    </button>
+                </div>
+            </form>
+        </div>
+    </nav>
+{% endblock nav %}
+{% block body %}
+    <div class="container">
+        <div class="col-md-6" id="div-form">
+            <div class="panel panel-info">
+                <div class="panel-heading text-center">
+                    {% if report %}{{ report.year }}年 第{{ report.week }}周 {% else %}
+                        沒有數據!{% endif %}{{ report.name|default:name }}
+                </div>
+                <div class="panel-body">
+                    <form class="form" action="{% url 'weekly:add' year week %}" method="post" role="form">
+                        {% csrf_token %}
+                        <div class="form-group row">
+                            <label for="work_plan" class="col-md-3 text-center ">本周工作计划</label>
+                            <div class="col-md-9">
+                                <textarea rows="3" class="form-control" id=work_plan" name="work_plan"
+                                          {% if  report %}readonly{% endif %}>{{ report.work_plan }}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="work_summary" class="col-md-3 text-center">本周工作总结</label>
+                            <div class="col-md-9">
+                                <textarea rows="3" class="form-control" id="work_summary"
+                                          name="work_summary">{{ report.work_summary }}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="next_work" class="col-md-3 text-center">下周工作计划</label>
+                            <div class="col-md-9">
+                                <textarea rows="3" class="form-control" id="next_work"
+                                          name="next_work">{{ report.next_work }}</textarea>
+                            </div>
+                        </div>
+                        <button class="btn btn-block btn-success" type="submit">提交</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="panel panel-info">
+                <div class="panel-heading text-center">
+                    參考：個人每日工作内容
+                </div>
+                <div class="panel-body">
+                    <ul>
+                        <li>個人每日工作内容</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="panel panel-info">
+                <div class="panel-heading text-center">
+                    參考：組內周工作安排
+                </div>
+                <div class="panel-body">
+                    <ul>
+                        <li>組內周工作安排</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {#    tab #}
+    <div class="container">
+        <ul class="nav nav-tabs" id="table-tab">
+            {% for week in weeks %}
+                <li {% if forloop.counter == week_num %}class="active"{% endif %}
+                    data-action="/weekly/{{ year }}/{{ week }}">
+                    <a href="#tab{{ forloop.counter }}" data-toggle="tab">第{{ week }}周</a>
+                </li>
+            {% endfor %}
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" id="action-menu" data-toggle="dropdown">導出<b
+                        class="caret"></b>
+                </a>
+                <ul class="dropdown-menu" role="menu" aria-labelledby="action-menu">
+                    <li><a href="javascript:void(0)" onclick="action_export()">導出為XLS文件</a></li>
+                    <li class="divider"></li>
+                    <li><a href="javascript:void(0)" onclick="action_upload()">導出并上傳至公共文件夾</a></li>
+                </ul>
+            </li>
+        </ul>
+        <div class="tab-content">
+            {% for week,item in reports %}
+                <div class="tab-pane fade in {% if forloop.counter == week_num %}active{% endif %}"
+                     id="tab{{ forloop.counter }}">
+                    <table class="table table-bordered table-striped table-hover table-responsive">
+                        <caption class="text-center"><h3>{{ week|week2range:year }}</h3></caption>
+                        <thead>
+                        <tr>
+                            <td class="th1"><strong>序號</strong></td>
+                            <td class="th2"><strong>姓名</strong></td>
+                            <td class="th3"><strong>本周工作计划</strong></td>
+                            <td class="th4"><strong>本周工作总结</strong></td>
+                            <td class="th5"><strong>下周工作计划</strong></td>
+                            <td class="th8"><strong>填寫IP</strong></td>
+                            <td class="th9"><strong>更新時間</strong></td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for report in item %}
+                            <tr>
+                                <td> {{ forloop.counter }}</td>
+                                {% for i in report.get_ordered_value %}
+                                    <td>{{ i }}</td>
+                                {% endfor %}
+                                <td>{{ report.update_datetime|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+    <script>
+        function action_export() {
+            location.href = $('#table-tab li').filter('.active').attr('data-action') + '/export';
+        }
+        function action_upload() {
+            location.href = $('#table-tab li').filter('.active').attr('data-action') + '/export?upload=true';
+        }
+    </script>
+{% endblock %}

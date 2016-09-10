@@ -1,0 +1,18 @@
+server {
+	listen 8080;
+	server_name "";
+	access_log /var/log/nginx/work_report/access.log;
+	error_log /var/log/nginx/work_report/error.log;
+    
+	location /static {
+		alias /www/work_report/static;
+	}
+    
+	location / {
+		include uwsgi_params;
+		uwsgi_pass 127.0.0.1:9002;
+		uwsgi_param UWSGI_PYHOME /www/work_report/venv;
+		uwsgi_param UWSGI_CHDIR /www/work_report;
+		uwsgi_param UWSGI_MODULE work_report.wsgi:application;
+	}
+}

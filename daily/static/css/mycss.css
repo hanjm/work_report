@@ -1,0 +1,82 @@
+@media (min-width: 1800px) {
+    .container {
+        width: 1600px;
+    }
+}
+
+div,
+ul li {
+    font-family: Microsoft YaHei;
+}
+
+#search div button {
+    display: none;
+}
+
+select option {
+    line-height: 20px;
+    height: 20px;
+    margin: 5px auto;
+}
+
+form label {
+    vertical-align: middle;
+}
+
+#div-bread {
+    padding-top: 15px;
+    margin-right: 100px;
+    font: 18px Microsoft YaHei;
+}
+
+#div-bread a {
+    height: 20px;
+}
+
+.th1 {
+    width: 40px;
+}
+
+.th2 {
+    width: 50px;
+}
+
+.th3 {
+    width: 150px;
+}
+
+.th4 {
+    width: 150px;
+}
+
+.th5 {
+    width: 150px;
+}
+
+.th6 {
+    width: 40px;
+}
+
+.th7 {
+    width: 150px;
+}
+
+.th8 {
+    width: 40px;
+}
+
+.th9 {
+    width: 40px;
+}
+
+.color-white {
+    color: White;
+}
+
+.color-red {
+    color: Red;
+}
+
+.color-deepskyblue-bg {
+    background-color: #2FA4E7;
+}

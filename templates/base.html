@@ -1,0 +1,55 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="cn">
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<head>
+    {% block title %}<title>{{ title }}</title>{% endblock %}
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-responsive.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/mycss.css' %}" rel="stylesheet">
+    <link href="{% static 'My97DatePicker/skin/WdatePicker.css' %}" rel="stylesheet">
+    <!--<link href="{% static 'easyui/themes/material/easyui.css' %}" rel="stylesheet">-->
+    <!--<link href="/static/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet">-->
+
+    <!--js-->
+    <script src="{% static 'jquery.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/respond.min.js' %}"></script>
+    <script src="{% static 'js/html5shiv.js' %}"></script>
+    <script src="{% static 'My97DatePicker/WdatePicker.js' %}"></script>
+    <!--<script src="{% static 'easyui/jquery.easyui.min.js' %}"></script>-->
+    <script src="{% static 'js/myjs.js' %}"></script>
+    <!--<script src="{% static 'bootstrap-select/js/bootstrap-select.min.js' %}"></script>-->
+</head>
+<body>
+{% block nav %}
+    123
+{% endblock %}
+{% block messages %}
+    {% if messages %}
+        <div id="div-messages" class="container alert">
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <span class="alert alert-error">{{ message }}</span>
+                {% elif message.tags == 'warning' %}
+                    <span class="alert alert-warning">{{ message }}</span>
+                {% elif message.tags == 'success' %}
+                    <span class="alert alert-success">{{ message }}</span>
+                {% else %}
+                    <span class="alert alert alert-info">{{ message }}</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+{% endblock %}
+
+{% block js %}
+    <script>
+    </script>
+{% endblock %}
+</body>
+</html>
