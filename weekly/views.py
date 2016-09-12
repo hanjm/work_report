@@ -1,23 +1,33 @@
 # coding= utf-8
 from __future__ import unicode_literals
 from django.shortcuts import render
-from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from datetime import date as _date, datetime
 from django.contrib import messages, sessions
+try:
+  from django.shortcuts.urlresolvers import reverse
+except ImportError:
+  from django.urls import reverse
 
-
-def index(request, year=_date.today().isocalendar()[0], week=_date.today().isocalendar()[1]):
+def index(request, year=None, week=None):
     from daily.views import get_request_user_name
-    from daily.models import get_team_by_name
-    from models import get_weekly_report_by_name, get_team_month_weekly_reports_by_week, get_month_weeks_by_week
+    from daily.models import get_team_by_name, get_personal_week_daily_reports_by_week
+    from models import get_weekly_report_by_name, get_team_month_weekly_reports_by_week, get_month_weeks_by_week, \
+        get_leader_weekly_report_by_week
+    if year is None:
+        year = _date.today().isocalendar()[0]
+    if week is None:
+        week = _date.today().isocalendar()[1]
     # url里的匹配参数为string 需要转换为int
     year = int(year)
     week = int(week)
     # get current_user info
     name = get_request_user_name(request)
+    team = get_team_by_name(name)
     report = get_weekly_report_by_name(name=name, year=year, week=week)
-    reports = get_team_month_weekly_reports_by_week(team=get_team_by_name(name), year=year, week=week)
+    reports = get_team_month_weekly_reports_by_week(team=team, year=year, week=week)
+    personal_reports = get_personal_week_daily_reports_by_week(name, year, week)
+    leader_weekly_report = get_leader_weekly_report_by_week(team=team, year=year, week=week)
     weeks = get_month_weeks_by_week(year, week)
     context = {
         "name": name,
@@ -27,6 +37,8 @@ def index(request, year=_date.today().isocalendar()[0], week=_date.today().isoca
         "week_num": week - weeks[0] + 1,  # 一个月的第几个星期
         "report": report,
         "reports": zip(weeks, reports),
+        "personal_reports": personal_reports,
+        "leader_weekly_report": leader_weekly_report,
     }
     return render(request, 'weekly_report.html', context)
 

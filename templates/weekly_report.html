@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load weekly_custom_filter %}
 {% block title %}
-    <title>每周工作報告</title>
+    <title xmlns="http://www.w3.org/1999/html">每周工作報告</title>
 {% endblock title %}
 {% block nav %}
     <nav class="navbar navbar-default" role="navigation">
@@ -17,10 +18,11 @@
                 <span>{{ name }} 已登录</span>
                 <a href="{% url 'admin:index' %}">管理</a><span>&nbsp;/</span>
                 <a href="{% url 'admin:password_change' %}">修改密碼</a><span>&nbsp;/</span>
-                <a href="{% url 'daily:logout' %}?next=/">註銷</a>
+                <a href="{% url 'daily:logout' %}?next=/">註銷</a><span>&nbsp;/</span>
             {% else %}
-                <a href="{% url 'daily:login' %}?next=/">登錄</a>
+                <a href="{% url 'daily:login' %}?next=/">登錄</a><span>&nbsp;/</span>
             {% endif %}
+            <a href="{% static 'file/ReportNotifyer.exe' %}">獲得每日提醒</a>
         </div>
         <div class="navbar-text">
             {{ user.name }}
@@ -29,8 +31,8 @@
             <form id="search" action="{% url 'weekly:index' %}" method="get" role="form">
                 <div class="form-group">
                     <input type="text" class="form-control" id="week" name="week" placeholder="Search"
-                           onfocus="WdatePicker({isShowWeek:true, onpicked:function(){document.getElementById('btn-submit').click()}})"
-                           value="{{ year }}/{{ week }}" readonly/>
+                           onfocus="WdatePicker({errDealMode:1,isShowWeek:true, onpicked:function(){document.getElementById('btn-submit').click()}})"
+                           value="{{ year }}/{{ week }}"/>
                     <button type="button" class="btn btn-default" id="btn-submit"
                             onclick="location.href={% url 'weekly:index' %} + document.getElementById('week').value">查看
                     </button>
@@ -82,9 +84,14 @@
                     參考：個人每日工作内容
                 </div>
                 <div class="panel-body">
-                    <ul>
-                        <li>個人每日工作内容</li>
-                    </ul>
+                    <table class="table table-condensed">
+                        {% for report in personal_reports %}
+                            <tr>
+                                <td width="55px">{{ report.date|date:"l" }}</td>
+                                <td>{{ report.real_work }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
                 </div>
             </div>
         </div>
@@ -94,9 +101,7 @@
                     參考：組內周工作安排
                 </div>
                 <div class="panel-body">
-                    <ul>
-                        <li>組內周工作安排</li>
-                    </ul>
+                    <p>{{ leader_weekly_report.work_plan|linebreaks|default:"沒有數據!" }}</p>
                 </div>
             </div>
         </div>
@@ -144,7 +149,7 @@
                             <tr>
                                 <td> {{ forloop.counter }}</td>
                                 {% for i in report.get_ordered_value %}
-                                    <td>{{ i }}</td>
+                                    <td>{{ i|linebreaks }}</td>
                                 {% endfor %}
                                 <td>{{ report.update_datetime|date:"Y-m-d H:i:s" }}</td>
                             </tr>

@@ -22,6 +22,11 @@ class WeeklyReport(models.Model):
     update_datetime = models.DateTimeField(verbose_name="更新時間")
     user = models.ForeignKey(User, verbose_name="用戶信息表中對應的人")
 
+    class Meta:
+        verbose_name = '週報數據表'
+        verbose_name_plural = verbose_name
+        unique_together = (('year', 'week', 'name'),)
+
     def __unicode__(self):
         return str(self.week) + self.name
 
@@ -29,27 +34,50 @@ class WeeklyReport(models.Model):
         return self.name, self.work_plan, self.work_summary, self.next_work, self.create_ip
 
 
-def get_weekly_report_by_name(name, year=_date.today().isocalendar()[0], week=_date.today().isocalendar()[1]):
+def get_weekly_report_by_name(name, year=None, week=None):
+    if year is None:
+        year = _date.today().isocalendar()[0]
+    if week is None:
+        week = _date.today().isocalendar()[1]
     report = WeeklyReport.objects.filter(name=name, year=year, week=week).first()
     return report
 
 
-def get_weekly_reports_by_week(year=_date.today().isocalendar()[0], week=_date.today().isocalendar()[1]):
+def get_weekly_reports_by_week(year=None, week=None):
+    if year is None:
+        year = _date.today().isocalendar()[0]
+    if week is None:
+        week = _date.today().isocalendar()[1]
     reports = WeeklyReport.objects.filter(year=year, week=week).order_by('user__order').all()
     return reports
 
 
-def get_team_weekly_reports_by_week(team, year=_date.today().isocalendar()[0], week=_date.today().isocalendar()[1]):
-    reports = WeeklyReport.objects.filter(year=year, week=week, user__team=team).order_by('user__order').all()
+def get_team_weekly_reports_by_week(team, year=None, week=None):
+    if year is None:
+        year = _date.today().isocalendar()[0]
+    if week is None:
+        week = _date.today().isocalendar()[1]
+    reports = WeeklyReport.objects.filter(year=year, week=week, user__team=team, user__role=0).order_by(
+        'user__order').all()
     return reports
 
 
-def get_team_month_weekly_reports_by_week(team, year=_date.today().isocalendar()[0],
-                                          week=_date.today().isocalendar()[1]):
+def get_team_month_weekly_reports_by_week(team, year=None, week=None):
+    if year is None:
+        year = _date.today().isocalendar()[0]
+    if week is None:
+        week = _date.today().isocalendar()[1]
     reports = []
     for w in get_month_weeks_by_week(year, week):
         reports.append(get_team_weekly_reports_by_week(team, year, w))
     return reports
+
+
+# daily report 頁面中需要使用的數據
+# 組長的組內工作安排
+def get_leader_weekly_report_by_week(team, year, week):
+    report = WeeklyReport.objects.filter(year=year, week=week).filter(user__team=team).filter(user__role=1).first()
+    return report
 
 
 def weekly_report_add_or_update(name, year, week, post_args, extra_args):
@@ -155,30 +183,33 @@ def get_day_range_by_week(year, week):
 def export_xls(name, year=_date.today().isocalendar()[0], week=_date.today().isocalendar()[1], upload=False):
     # open xls
     wb = copy(
-        open_workbook('weekly/static/file/template.xls', encoding_override='utf-8', formatting_info=True))
+        open_workbook('weekly/static/file/weekly_template.xls', encoding_override='utf-8', formatting_info=True))
     sheet = wb.get_sheet(0)
     # cell style
-    style = easyxf(
-        "font:name PMingLiU,height 240;border:bottom 0x01,right 0x01;align:horz center,vert center,wrap on", "0%")
+    style = easyxf("font:name PMingLiU,height 240;border:top 0x01,right 0x01,bottom 0x01,left 0x01;\
+    align:horz center,vert center,wrap on", "0%")
     # r1c3 date format
     style2 = easyxf("font:name PMingLiU,bold on,height 240;align:horz center,vert center,wrap on")
     # get reports
     team = get_team_by_name(name)
     reports = get_team_weekly_reports_by_week(team, year, week)
     # write reports
-    row = 4
+    row = 3
     for report in reports:
-        tr = [report.name, report.work_plan, report.work_summary, report.next_work, report.name]
-        col = 1
-        for td in tr:
-            sheet.write(row, col, td, style)
-            col += 1
-        row += 1
+        col = 3
+        # name
+        sheet.write(row, col, report.name, style)
+        row_offset = 0
+        col = 2
+        for td in report.work_plan.split('\n')[:4]:
+            sheet.write(row + row_offset, col, td, style)
+            row_offset += 1
+        row += 4
     # write team
-    sheet.write(1, 2, "組 級 名 稱 ： " + team, style2)
+    sheet.write(1, 1, "組 級 名 稱 ： " + team, style2)
     # write table date
-    sheet.write(1, 3, "  時 間： " + get_day_range_by_week(year, week), style2)
-    filename = team + '周工作報表-第' + unicode(week) + '周.xls'
+    sheet.write(1, 2, "  時 間： " + get_day_range_by_week(year, week), style2)
+    filename = team + '周工作分配-第' + str(week).decode() + '周.xls'
     wb.save('weekly/static/exported_xls/' + filename)
     if upload:
         message = []
@@ -187,12 +218,12 @@ def export_xls(name, year=_date.today().isocalendar()[0], week=_date.today().iso
             ftp = FTP(ftp_info.host, timeout=20)
             message.append(ftp.getwelcome())
             ftp.login(user=ftp_info.username, passwd=ftp_info.password)
-            ftp.cwd(ftp_info.folder1.encode('big5'))
+            ftp.cwd(ftp_info.folder3.encode('big5'))
             message.append(ftp.pwd().decode('big5').encode('utf-8'))
             with open('weekly/static/exported_xls/' + filename, 'rb') as fp:
                 ftp.storbinary(('STOR ' + filename).encode('big5'), fp)
             message.append('上傳成功')
-            folder2 = ftp_info.folder2
+            folder2 = ftp_info.folder4
             try:
                 ftp.mkd(folder2.encode('big5'))
             except Exception as e:

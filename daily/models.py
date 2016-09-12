@@ -1,9 +1,9 @@
-﻿# coding = utf-8
+﻿# coding=utf-8
 from __future__ import unicode_literals
 
 from django.conf import settings
 from django.db import models
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as _date
 from xlutils.copy import copy
 from xlwt import easyxf
 from xlrd import open_workbook
@@ -21,7 +21,9 @@ class User(models.Model):
     order = models.IntegerField(verbose_name="排序權值", help_text="日報主頁顯示的表格按此值降序排列用戶")
 
     class Meta:
-        pass
+        verbose_name = '用戶信息表'
+        verbose_name_plural = verbose_name
+        get_latest_by = 'date'
 
     def __unicode__(self):
         return self.name
@@ -51,6 +53,11 @@ class DailyReport(models.Model):
     update_datetime = models.DateTimeField(verbose_name="更新時間")
     user = models.ForeignKey(User, verbose_name="用戶信息表中對應的人")
 
+    class Meta:
+        verbose_name = '日報數據表'
+        verbose_name_plural = verbose_name
+        unique_together = (('date', 'name'),)
+
     def __unicode__(self):
         return self.date.strftime('%Y-%m-%d ') + self.name
 
@@ -59,7 +66,9 @@ class DailyReport(models.Model):
                self.create_ip
 
 
-def get_daily_report_by_name(name, date=datetime.now().strftime('%Y-%m-%d')):
+def get_daily_report_by_name(name, date=None):
+    if date is None:
+        date = _date.today().isoformat()
     report = DailyReport.objects.filter(name=name, date=date).first()
     return report
 
@@ -68,31 +77,63 @@ def get_daily_reports_by_name():
     pass
 
 
-def get_daily_reports_by_date(date=datetime.now().strftime('%Y-%m-%d')):
+def get_daily_reports_by_date(date=None):
+    if date is None:
+        date = _date.today().isoformat()
     reports = DailyReport.objects.filter(date=date).order_by('user__order').all()
     return reports
 
 
-def get_week_daily_reports_by_date(date=datetime.now().strftime('%Y-%m-%d')):
+def get_week_daily_reports_by_date(date=None):
+    if date is None:
+        date = _date.today().isoformat()
     reports = []
     for day in get_week_days_by_date(date):
         reports.append(get_daily_reports_by_date(day))
     return reports
 
 
-def get_team_daily_reports_by_date(team, date=datetime.now().strftime('%Y-%m-%d')):
+def get_team_daily_reports_by_date(team, date=None):
+    if date is None:
+        date = _date.today().isoformat()
     reports = DailyReport.objects.filter(date=date, user__team=team).order_by('user__order').all()
     return reports
 
 
-def get_team_week_daily_reports_by_date(team, date=datetime.now().strftime('%Y-%m-%d')):
+# 用戶所在組的所有成員的一周工作內容（主表格）
+def get_team_week_daily_reports_by_date(team, date=None):
+    if date is None:
+        date = _date.today().isoformat()
     reports = []
     for day in get_week_days_by_date(date):
         reports.append(get_team_daily_reports_by_date(team, day))
     return reports
 
 
-def tomorrow_report_add_or_update(name, date, post_args, extra_args):
+# 個人的一周內容
+def get_personal_week_daily_reports_by_week(name, year=None, week=None):
+    if year is None:
+        year = _date.today().year
+    if week is None:
+        week = _date.today().isoweekday()[1]
+    # 根據year week構造一個日期
+    # ISO8601 the first thursday of january is the first week of a year e.g 2016.1.1 is year 2015 week 53
+    if int(week) == 53:
+        construct_date = datetime.strptime(str(year + 1) + str(1), "%Y%j")
+    else:
+        if _date(year, 1, 1).isoweekday() >= 4:
+            construct_date = datetime.strptime(str(year) + str(week * 7), "%Y%j")
+        else:
+            construct_date = datetime.strptime(str(year) + str((week - 1) * 7), "%Y%j")
+    date = construct_date.strftime("%Y-%m-%d")
+    reports = []
+    for day in get_week_days_by_date(date):
+        reports.append(get_daily_report_by_name(name, day))
+    return reports
+
+
+# 明日工作預報同步至明天的items中
+def __tomorrow_report_add_or_update(name, date, post_args, extra_args):
     # process day after date
     date = get_next_day(date)
     tomorrow_report = DailyReport.objects.filter(name=name, date=date).first()
@@ -135,7 +176,7 @@ def daily_report_add_or_update(name, date, post_args, extra_args):
             user_id=User.objects.get(name=name).id
         )
         # process day after date
-        tomorrow_report_add_or_update(name, date, post_args, extra_args)
+        __tomorrow_report_add_or_update(name, date, post_args, extra_args)
 
     else:
         # update this day
@@ -147,7 +188,7 @@ def daily_report_add_or_update(name, date, post_args, extra_args):
         report.update_datetime = datetime.now()
         report.save()
         # process day after date
-        tomorrow_report_add_or_update(name, date, post_args, extra_args)
+        __tomorrow_report_add_or_update(name, date, post_args, extra_args)
 
 
 # date function utils
@@ -175,19 +216,25 @@ class FtpInfo(models.Model):
     host = models.GenericIPAddressField(verbose_name="FTP地址")
     username = models.TextField(max_length=10, verbose_name="登錄用戶名")
     password = models.TextField(max_length=26, verbose_name="登錄密碼")
-    team = models.TextField(verbose_name="組別")
-    folder1 = models.TextField(verbose_name="上傳文件夾1-組內文件夾")
-    folder2 = models.TextField(verbose_name="上傳文件夾2-公共文件夾")
+    team = models.TextField(verbose_name="組別", unique=True)
+    folder1 = models.TextField(verbose_name="日報上傳文件夾1-組內文件夾")
+    folder2 = models.TextField(verbose_name="日報上傳文件夾2-公共文件夾")
+    folder3 = models.TextField(verbose_name="週報上傳文件夾1-組內文件夾")
+    folder4 = models.TextField(verbose_name="週報上傳文件夾2-公共文件夾")
+
+    class Meta:
+        verbose_name = 'FTP公共文件夾登錄信息(用於"導出并上傳至公共文件夾功能")'
+        verbose_name_plural = verbose_name
 
     def __unicode__(self):
         return self.team + self.host + self.username + self.password
 
 
 # export xls function
-def export_xls(name, date=datetime.now().strftime('%Y-%m-%d'), upload=False):
+def export_xls(team, date=_date.today().isoformat(), upload=False):
     # open xls
     wb = copy(
-        open_workbook('static/file/template.xls', encoding_override='utf-8', formatting_info=True))
+        open_workbook('daily/static/file/daily_template.xls', encoding_override='utf-8', formatting_info=True))
     sheet = wb.get_sheet(0)
     # cell style
     style = easyxf(
@@ -210,12 +257,11 @@ def export_xls(name, date=datetime.now().strftime('%Y-%m-%d'), upload=False):
             col += 1
         row += 1
     # write team
-    team = get_team_by_name(name)
     sheet.write(1, 2, "組 級 名 稱 ： " + team, style2)
     # write table date
     sheet.write(1, 3, "  時 間： " + date, style2)
     filename = team + '日工作報表' + date + '.xls'
-    wb.save('static/exported_xls/' + filename)
+    wb.save('daily/static/exported_xls/' + filename)
     if upload:
         message = []
         try:
@@ -225,7 +271,7 @@ def export_xls(name, date=datetime.now().strftime('%Y-%m-%d'), upload=False):
             ftp.login(user=ftp_info.username, passwd=ftp_info.password)
             ftp.cwd(ftp_info.folder1.encode('big5'))
             message.append(ftp.pwd().decode('big5').encode('utf-8'))
-            with open('static/exported_xls/' + filename, 'rb') as fp:
+            with open('daily/static/exported_xls/' + filename, 'rb') as fp:
                 ftp.storbinary(('STOR ' + filename).encode('big5'), fp)
             message.append('上傳成功')
             date_year = date.split('-')[0]
@@ -238,7 +284,7 @@ def export_xls(name, date=datetime.now().strftime('%Y-%m-%d'), upload=False):
                 message.append(e.message.decode('big5', errors='ignore').encode('utf-8'))
             ftp.cwd(folder2.encode('big5'))
             message.append(ftp.pwd().decode('big5').encode('utf-8'))
-            with open('static/exported_xls/' + filename, 'rb') as fp:
+            with open('daily/static/exported_xls/' + filename, 'rb') as fp:
                 ftp.storbinary(('STOR ' + filename).encode('big5'), fp)
             message.append('上傳成功')
             ftp.close()

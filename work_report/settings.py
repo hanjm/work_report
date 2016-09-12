@@ -24,7 +24,7 @@ SECRET_KEY = 'y_c!0o_0a@u2#gtxez=8pky7hz-#-9fxz!@tfqe@sohjqu&+c7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -102,7 +102,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
-LANGUAGE_CODE = 'zh-Hans'
+LANGUAGE_CODE = 'zh_Hans'
 
 TIME_ZONE = 'Asia/Shanghai'
 
@@ -117,7 +117,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = path.join(BASE_DIR, 'static')
-# STATIC_DIRS = (path.join(BASE_DIR, 'static'),)
+# STATIC_DIRS = (path.join(STATIC_ROOT, 'daily'), path.join(STATIC_ROOT, 'weekly'))
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',

@@ -22,6 +22,6 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^daily/', include('daily.urls', namespace='daily')),
     url(r'^weekly/', include('weekly.urls', namespace='weekly')),
-    url(r'^login/$', daily.views.login),
+    url(r'^login/', daily.views.login),
     url(r'^$', daily.views.index),
 ]
