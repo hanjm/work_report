@@ -24,6 +24,7 @@ def index(request, date=None):
         team = get_team_by_name(name)
     except:
         # team = ''
+        messages.info(request, '测试账号：F1670111 密码asdf.2016')
         return HttpResponseRedirect('/login/?next=/')
     reports = get_team_week_daily_reports_by_date(team=team, date=date)
     calendar = _date(int(date.split('-')[0]), int(date.split('-')[1]), int(date.split('-')[2])).isocalendar()
