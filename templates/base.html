@@ -28,16 +28,20 @@
 {% endblock %}
 {% block messages %}
     {% if messages %}
-        <div id="div-messages" class="container alert">
+        <div id="div-messages" class="container">
             {% for message in messages %}
                 {% if message.tags == 'error' %}
-                    <span class="alert alert-error">{{ message }}</span>
+                    <div class="alert alert-error">{{ message }}
+                    <button class="close" data-dismiss="alert">x</button></div>
                 {% elif message.tags == 'warning' %}
-                    <span class="alert alert-warning">{{ message }}</span>
+                    <div class="alert alert-warning">{{ message }}
+                    <button class="close" data-dismiss="alert">x</button></div>
                 {% elif message.tags == 'success' %}
-                    <span class="alert alert-success">{{ message }}</span>
+                    <div class="alert alert-success">{{ message }}
+                    <button class="close" data-dismiss="alert">x</button></div>
                 {% else %}
-                    <span class="alert alert alert-info">{{ message }}</span>
+                    <div class="alert alert-info">{{ message }}
+                    <button class="close" data-dismiss="alert">x</button></div>
                 {% endif %}
             {% endfor %}
         </div>

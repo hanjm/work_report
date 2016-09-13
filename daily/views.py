@@ -4,11 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from datetime import date as _date
 from django.contrib import messages, sessions
 from django.shortcuts import render
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.shortcuts.urlresolvers import reverse
+from django.urls import reverse
 
 
 def index(request, date=None):
@@ -56,7 +52,7 @@ def add(request, date):
         messages.success(request, "ok")
     except Exception as e:
         messages.error(request, "error: " + e.message.decode(errors='ignore'))
-    return HttpResponseRedirect(urlresolvers.reverse('daily:view', args=[date]))
+    return HttpResponseRedirect(reverse('daily:view', args=[date]))
 
 
 def export(request, date):
