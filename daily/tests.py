@@ -3,10 +3,7 @@ from __future__ import unicode_literals
 from django.test import TestCase, Client
 from django.test.utils import setup_test_environment
 from models import get_week_days_by_date, export_xls
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.shortcuts.urlresolvers import reverse
+from django.urls import reverse
 setup_test_environment()
 client = Client()
 
